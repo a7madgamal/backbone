@@ -171,6 +171,9 @@
   // Bind an event to a `callback` function. Passing `"all"` will bind
   // the callback to all events fired.
   Events.on = function (name, callback, context) {
+    console.log('Events.on (' + name + '):', this);
+    console.log('Events.on (callback):', callback);
+    console.log('Events.on (context):', context);
     return internalOn(this, name, callback, context);
   };
 
@@ -241,6 +244,9 @@
   // callbacks for the event. If `name` is null, removes all bound
   // callbacks for all events.
   Events.off = function (name, callback, context) {
+    console.log('Events.off (' + name + '):', this);
+    console.log('Events.off (callback):', callback);
+    console.log('Events.off (context):', context);
     if (!this._events) return this;
     this._events = eventsApi(offApi, this._events, name, callback, {
       context: context,
@@ -332,6 +338,9 @@
   // are passed in using the space-separated syntax, the handler will fire
   // once for each event, not once for a combination of all events.
   Events.once = function (name, callback, context) {
+    console.log('Events.once (' + name + '):', this);
+    console.log('Events.once (callback):', callback);
+    console.log('Events.once (context):', context);
     // Map the event into a `{event: once}` object.
     var events = eventsApi(onceMap, {}, name, callback, _.bind(this.off, this));
     if (typeof name === 'string' && context == null) callback = void 0;
@@ -363,6 +372,8 @@
   // (unless you're listening on `"all"`, which will cause your callback to
   // receive the true name of the event as the first argument).
   Events.trigger = function (name) {
+    console.log('Events.trigger (' + name + '):', this);
+    console.log('Events.trigger (this._events):', this._events);
     if (!this._events) return this;
 
     var length = Math.max(0, arguments.length - 1);
@@ -431,7 +442,21 @@
 
   // Create a new model with the specified attributes. A client id (`cid`)
   // is automatically generated and assigned for you.
+
+  function getConstructorChain(obj, type) {
+    var cs = [], pt = obj;
+    do {
+       if (pt = Object.getPrototypeOf(pt)) cs.push(pt.constructor || null);
+    } while (pt != null);
+    return type == 'names' ? cs.map(function(c) {
+        return c ? c.toString().split(/\s|\(/)[1] : null;
+    }) : cs;
+}
+
   var Model = Backbone.Model = function (attributes, options) {
+    // this.my_parent_are = getConstructorChain(this);
+    this.i_am_a = 'MODEL';
+
     var attrs = attributes || {};
     options || (options = {});
     this.preinitialize.apply(this, arguments);
@@ -507,6 +532,11 @@
     // the core primitive operation of a model, updating the data and notifying
     // anyone who needs to know about the change in state. The heart of the beast.
     set: function (key, val, options) {
+      console.log('Set():', key, val, options);
+      if (key && key._type) {
+        this.my_type_is = key._type
+      }
+
       if (key == null) return this;
 
       // Handle both `"key", value` and `{key: value}` -style arguments.
@@ -1454,6 +1484,7 @@
     _.extend(this, _.pick(options, viewOptions));
     this._ensureElement();
     this.initialize.apply(this, arguments);
+    this.i_am_a = 'VIEW';
   };
 
   // Cached regex to split keys for `delegate`.
