@@ -35,7 +35,7 @@
   }
 
 })(function (root, Backbone, _, $) {
-
+  var backboneLog = localStorage.getItem('debugbb') === 'true' ? console.log : function(){};
   // Initial Setup
   // -------------
 
@@ -171,9 +171,16 @@
   // Bind an event to a `callback` function. Passing `"all"` will bind
   // the callback to all events fired.
   Events.on = function (name, callback, context) {
-    console.log('Events.on (' + name + '):', this);
-    console.log('Events.on (callback):', callback);
-    console.log('Events.on (context):', context);
+    if (name !== 'all') {
+      backboneLog('Events.on (' + name + ') this:', this);
+      if (callback) {
+        backboneLog('Events.on (' + name + ') callback:', callback);
+      }
+      if (context) {
+        backboneLog('Events.on (' + name + ') context:', context);
+      }
+    }
+
     return internalOn(this, name, callback, context);
   };
 
@@ -224,9 +231,7 @@
   var onApi = function (events, name, callback, options) {
     if (callback) {
       var handlers = events[name] || (events[name] = []);
-      var context = options.context,
-        ctx = options.ctx,
-        listening = options.listening;
+      var context = options.context, ctx = options.ctx, listening = options.listening;
       if (listening) listening.count++;
 
       handlers.push({
@@ -244,9 +249,13 @@
   // callbacks for the event. If `name` is null, removes all bound
   // callbacks for all events.
   Events.off = function (name, callback, context) {
-    console.log('Events.off (' + name + '):', this);
-    console.log('Events.off (callback):', callback);
-    console.log('Events.off (context):', context);
+    backboneLog('Events.off (' + name + ') this:', this);
+    if (callback) {
+      backboneLog('Events.off (' + name + ') callback:', callback);
+    }
+    if (context) {
+      backboneLog('Events.off (' + name + ') context:', context);
+    }
     if (!this._events) return this;
     this._events = eventsApi(offApi, this._events, name, callback, {
       context: context,
@@ -338,9 +347,13 @@
   // are passed in using the space-separated syntax, the handler will fire
   // once for each event, not once for a combination of all events.
   Events.once = function (name, callback, context) {
-    console.log('Events.once (' + name + '):', this);
-    console.log('Events.once (callback):', callback);
-    console.log('Events.once (context):', context);
+    backboneLog('Events.once (' + name + ') this:', this);
+    if (callback) {
+      backboneLog('Events.once (' + name + ') callback:', callback);
+    }
+    if (context) {
+      backboneLog('Events.once (' + name + ') context:', context);
+    }
     // Map the event into a `{event: once}` object.
     var events = eventsApi(onceMap, {}, name, callback, _.bind(this.off, this));
     if (typeof name === 'string' && context == null) callback = void 0;
@@ -372,14 +385,29 @@
   // (unless you're listening on `"all"`, which will cause your callback to
   // receive the true name of the event as the first argument).
   Events.trigger = function (name) {
-    console.log('Events.trigger (' + name + '):', this);
-    console.log('Events.trigger (this._events):', this._events);
+    backboneLog('Events.trigger (' + name + ') this:', this);
+    if (this._events && this._events[name]) {
+      if (typeof this._events[name] == 'object') {
+        this._events[name].forEach(function(evt, i){
+          backboneLog('Events.trigger (' + name + ') callback[' + i + ']:', evt.callback);
+          backboneLog('Events.trigger (' + name + ') ctx[' + i + ']:', evt.ctx);
+        });
+      } else {
+        backboneLog('Events.trigger (' + name + ') callback:', this._events[name]);
+      }
+    }
+    // console.trace()
+    // backboneLog('Events.trigger (this._events):', this._events);
     if (!this._events) return this;
 
     var length = Math.max(0, arguments.length - 1);
     var args = Array(length);
     for (var i = 0; i < length; i++) args[i] = arguments[i + 1];
-
+    if (args.length > 0) {
+      args.forEach(function(arg, n){
+        backboneLog('Events.trigger (' + name + ') arg[' + n + ']:', args[n]);
+      });
+    }
     eventsApi(triggerApi, this._events, name, void 0, args);
     return this;
   };
@@ -444,18 +472,19 @@
   // is automatically generated and assigned for you.
 
   function getConstructorChain(obj, type) {
-    var cs = [], pt = obj;
+    var cs = [],
+      pt = obj;
     do {
-       if (pt = Object.getPrototypeOf(pt)) cs.push(pt.constructor || null);
+      if (pt = Object.getPrototypeOf(pt)) cs.push(pt.constructor || null);
     } while (pt != null);
-    return type == 'names' ? cs.map(function(c) {
-        return c ? c.toString().split(/\s|\(/)[1] : null;
+    return type == 'names' ? cs.map(function (c) {
+      return c ? c.toString().split(/\s|\(/)[1] : null;
     }) : cs;
-}
+  }
 
   var Model = Backbone.Model = function (attributes, options) {
     // this.my_parent_are = getConstructorChain(this);
-    this.i_am_a = 'MODEL';
+    // this.i_am_a = 'MODEL';
 
     var attrs = attributes || {};
     options || (options = {});
@@ -532,9 +561,17 @@
     // the core primitive operation of a model, updating the data and notifying
     // anyone who needs to know about the change in state. The heart of the beast.
     set: function (key, val, options) {
-      console.log('Set():', key, val, options);
-      if (key && key._type) {
-        this.my_type_is = key._type
+      // if (key && key._type) {
+      //   this.myTypeIs = key._type;
+      // }
+      var tikType = (key && key._type ? key._type : '').replace('Tik::ApiModel::', '');
+      backboneLog('Model.set(' + tikType + ') this:', this);
+      backboneLog('Model.set(' + tikType + ') key:', key);
+      if (val) {
+        backboneLog('Model.set(' + tikType + ') val:', val);
+      }
+      if (options) {
+        backboneLog('Model.set(' + tikType + ') options:', options);
       }
 
       if (key == null) return this;
@@ -1484,7 +1521,9 @@
     _.extend(this, _.pick(options, viewOptions));
     this._ensureElement();
     this.initialize.apply(this, arguments);
-    this.i_am_a = 'VIEW';
+    // this.i_am_a = 'VIEW';
+    backboneLog('Backbone.View this:', this);
+    backboneLog('Backbone.View options:', options);
   };
 
   // Cached regex to split keys for `delegate`.
@@ -2162,32 +2201,32 @@
   // class properties to be extended.
   var extend = function (protoProps, staticProps) {
     var parent = this;
-    var child;
+    var extended;
 
     // The constructor function for the new subclass is either defined by you
     // (the "constructor" property in your `extend` definition), or defaulted
     // by us to simply call the parent constructor.
     if (protoProps && _.has(protoProps, 'constructor')) {
-      child = protoProps.constructor;
+      extended = protoProps.constructor;
     } else {
-      child = function () {
+      extended = function () {
         return parent.apply(this, arguments);
       };
     }
 
     // Add static properties to the constructor function, if supplied.
-    _.extend(child, parent, staticProps);
+    _.extend(extended, parent, staticProps);
 
     // Set the prototype chain to inherit from `parent`, without calling
     // `parent`'s constructor function and add the prototype properties.
-    child.prototype = _.create(parent.prototype, protoProps);
-    child.prototype.constructor = child;
+    extended.prototype = _.create(parent.prototype, protoProps);
+    extended.prototype.constructor = extended;
 
     // Set a convenience property in case the parent's prototype is needed
     // later.
-    child.__super__ = parent.prototype;
-
-    return child;
+    extended.__super__ = parent.prototype;
+    // extended.name = 'meh';
+    return extended;
   };
 
   // Set up inheritance for the model, collection, router, view and history.
